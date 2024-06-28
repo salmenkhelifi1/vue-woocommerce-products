@@ -15,6 +15,3 @@ export default {
 };
 </script>
 
-<style>
-/* Global styles or adjust as per your design */
-</style>

@@ -7,6 +7,7 @@
       <input
         type="text"
         v-model="searchQuery"
+        @input="debouncedSearch"
         placeholder="Search products..."
         class="border p-2 flex-grow max-w-60"
       />
@@ -53,7 +54,8 @@
 </template>
 
 <script>
-import axios from 'axios';
+import { fetchProductsFromAPI } from '../assets/js/apiService';
+import _ from 'lodash';
 
 export default {
   name: 'ProductList',
@@ -61,16 +63,16 @@ export default {
   data() {
     return {
       currentPage: 1,
-      productsPerPage: 20, // Adjusting for demo purposes
+      productsPerPage: 20,
       searchQuery: "",
-      products: [], // Array to hold all products
+      products: [],
       totalPages: 0,
       loading: false
     };
   },
 
   mounted() {
-    this.fetchProducts(); // Fetch products when component is mounted
+    this.fetchProducts();
   },
 
   computed: {
@@ -90,35 +92,40 @@ export default {
       this.currentPage = page;
 
       try {
-        console.log('Fetching products...');
-        // Simulating fetching data.json locally
-        const response = await axios.get('/data.json');
-        console.log('Response:', response);
+        let allProducts = [];
+        let page = 1;
+        let fetchedProducts;
 
-        let products = response.data;
-        console.log('Products:', products);
+        // Fetch all pages of products
+        do {
+          fetchedProducts = await fetchProductsFromAPI(page, 100); // Assuming 100 is the maximum per_page value
+          allProducts = [...allProducts, ...fetchedProducts];
+          page++;
+        } while (fetchedProducts.length > 0);
 
         // Filter by search query
         if (this.searchQuery) {
-          products = products.filter(product =>
+          allProducts = allProducts.filter(product =>
             product.name.toLowerCase().includes(this.searchQuery.toLowerCase())
           );
         }
 
-        this.products = products;
-
-        // Calculate total pages
-        this.totalPages = Math.ceil(products.length / this.productsPerPage);
-        console.log('Total Pages:', this.totalPages);
+        this.products = allProducts;
+        this.totalPages = Math.ceil(allProducts.length / this.productsPerPage);
       } catch (error) {
-        console.error("Error fetching products:", error);
+        console.error(error.message);
       } finally {
         this.loading = false;
       }
     },
+
     searchProducts() {
-      this.fetchProducts(1); // Reset to first page when searching
-    }
+      this.fetchProducts(1);
+    },
+
+    debouncedSearch: _.debounce(function() {
+      this.searchProducts();
+    }, 300),
   }
 };
 </script>
