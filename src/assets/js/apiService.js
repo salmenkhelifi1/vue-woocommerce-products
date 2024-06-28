@@ -10,3 +10,4 @@ export async function fetchData() {
     throw error; // Propagate the error back to the caller
   }
 }
+  
